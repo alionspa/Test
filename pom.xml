@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>apolyakov</groupId>
+    <artifactId>Test</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+        <properties>
+            <maven.compiler.source>25</maven.compiler.source>
+            <maven.compiler.target>25</maven.compiler.target>
+            <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+            <main.class>apolyakov.Test</main.class>
+        </properties>
+
+        <build>
+            <!-- Вилучення файлів з процесу компіляції Java -->
+            <resources>
+                <resource>
+                    <directory>src/main/resources</directory>
+                    <excludes>
+                        <exclude>config/logback.xml</exclude>
+                        <exclude>config/*.properties</exclude>
+                    </excludes>
+                </resource>
+            </resources>
+
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>3.5.0</version>
+                    <configuration>
+                        <archive>
+                            <manifest>
+                                <!-- Додає Class-Path в MANIFEST.MF -->
+                                <addClasspath>true</addClasspath>
+                                <!-- Вказує префікс шляху до папки з бібліотеками  -->
+                                <classpathPrefix>lib/</classpathPrefix>
+                                <!-- Головний клас для запуску -->
+                                <mainClass>${main.class}</mainClass>
+                            </manifest>
+                            <manifestEntries>
+                                <!-- Додає шлях до папки config поруч із jar-файлом -->
+                                <Class-Path>config/</Class-Path>
+                            </manifestEntries>
+                        </archive>
+                    </configuration>
+                </plugin>
+
+                <!-- Вилучення папки з процесу компіляції Java -->
+                <!--            <plugin>-->
+                <!--                <groupId>org.apache.maven.plugins</groupId>-->
+                <!--                <artifactId>maven-compiler-plugin</artifactId>-->
+                <!--                <version>3.13.0</version>-->
+                <!--                <configuration>-->
+                <!--                    <excludes>-->
+                <!--                        <exclude>com/apoliakov/JavaCourse/lesson1/**</exclude>-->
+                <!--                    </excludes>-->
+                <!--                </configuration>-->
+                <!--            </plugin>-->
+
+                <!--             Плагін для копіювання залежностей у lb -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.11.0</version>
+                    <executions>
+                        <execution>
+                            <id>copy-dependencies</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>copy-dependencies</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <!--            Копіювання з Ресурсів в config-->
+                <!--            <plugin>-->
+                <!--                <artifactId>maven-resources-plugin</artifactId>-->
+                <!--                <version>3.3.1</version>-->
+                <!--                <executions>-->
+                <!--                    <execution>-->
+                <!--                        <id>copy-resources</id>-->
+                <!--                        <phase>validate</phase>-->
+                <!--                        <goals>-->
+                <!--                            <goal>copy-resources</goal>-->
+                <!--                        </goals>-->
+                <!--                        <configuration>-->
+                <!--                            <outputDirectory>${project.build.directory}/-->
+                <!--                            </outputDirectory>-->
+                <!--                            <resources>-->
+                <!--                                <resource>-->
+                <!--                                    <directory>src/main/resources</directory>-->
+                <!--                                    <includes>-->
+                <!--                                        <include>**/*.*</include>-->
+                <!--                                    </includes>-->
+                <!--                                </resource>-->
+                <!--                            </resources>-->
+                <!--                        </configuration>-->
+                <!--                    </execution>-->
+                <!--                </executions>-->
+                <!--            </plugin>-->
+
+            </plugins>
+        </build>
+
+        <dependencies>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>1.5.37</version>
+                <scope>compile</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>tools.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
+                <version>3.2.0</version>
+                <scope>compile</scope>
+            </dependency>
+
+        </dependencies>
+
+        <profiles>
+            <!-- 1. Профіль для maven-assembly-plugin -->
+            <profile>
+                <id>thin</id>
+                <build>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-assembly-plugin</artifactId>
+                            <version>3.8.0</version>
+                            <configuration>
+                                <descriptorRefs>
+                                    <descriptorRef>jar-with-dependencies</descriptorRef>
+                                </descriptorRefs>
+                                <archive>
+                                    <manifest>
+                                        <addClasspath>true</addClasspath>
+                                        <classpathPrefix>lib/</classpathPrefix>
+                                        <mainClass>${main.class}</mainClass>
+                                    </manifest>
+                                    <manifestEntries>
+                                        <!-- Додає шлях до папки config поруч із jar-файлом -->
+                                        <Class-Path>config/</Class-Path>
+                                    </manifestEntries>
+                                </archive>
+                            </configuration>
+                            <executions>
+                                <execution>
+                                    <id>make-assembly</id>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>single</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </build>
+            </profile>
+
+            <!-- 2. Профіль для maven-shade-plugin -->
+            <profile>
+                <id>fat</id>
+                <build>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-shade-plugin</artifactId>
+                            <version>3.6.2</version>
+                            <executions>
+                                <execution>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>shade</goal>
+                                    </goals>
+                                    <configuration>
+                                        <finalName>fat-jar</finalName>
+                                        <transformers>
+                                            <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                                <mainClass>${main.class}</mainClass>
+                                            </transformer>
+                                        </transformers>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </build>
+            </profile>
+        </profiles>
+
+    </project>
