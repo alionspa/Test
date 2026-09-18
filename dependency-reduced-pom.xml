@@ -116,7 +116,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.target>25</maven.compiler.target>
-    <main.class>apolyakov.Test</main.class>
+    <main.class>Project_2.Test</main.class>
     <maven.compiler.source>25</maven.compiler.source>
   </properties>
 </project>
