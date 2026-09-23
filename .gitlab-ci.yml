@@ -1,0 +1,54 @@
+# Иcпользуем официальный образ Docker с поддержкой JDK 17
+image: eclipse-temurin:17-jdk-alpine
+
+# Глобальный кэш для Maven, чтобы не выкачивать зависимости при каждой сборке
+cache:
+  paths:
+    - .m2/repository
+
+variables:
+  # Переопределяем путь к локальному репозиторию Maven для работы кэша
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+# Определяем последовательность этапов (Stages)
+stages:
+  - build
+  - test
+  - package
+
+# 1. Этап компиляции
+build_job:
+  stage: build
+  script:
+    - echo "Компиляция Java проекта..."
+    - ./mvnw compile
+  only:
+    - merge_requests
+    - main
+
+# 2. Этап запуска юнит-тестов
+test_job:
+  stage: test
+  script:
+    - echo "Запуск тестов JUnit..."
+    - ./mvnw test
+  # GitLab подхватит отчеты о тестах и покажет в интерфейсе
+  artifacts:
+    when: always
+    paths:
+      - target/surefire-reports/
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+
+# 3. Этап упаковки в JAR
+package_job:
+  stage: package
+  script:
+    - echo "Создание исполняемого JAR-файла..."
+    - ./mvnw package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar
+    expire_in: 1 week
+  only:
+    - main
