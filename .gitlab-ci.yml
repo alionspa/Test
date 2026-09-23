@@ -1,0 +1,36 @@
+stages:
+  - build
+  - test
+
+# Используем официальный образ OpenJDK (или Eclipse Temurin)
+image: eclipse-temurin:17-jdk-alpine
+
+# Настройка кэширования локального репозитория Maven (.m2),
+# чтобы ускорить сборку при повторных запусках пайплайна
+cache:
+  paths:
+    - .m2/repository
+
+variables:
+  # Указываем Maven использовать локальную папку проекта для кэша
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+# Стадия сборки (компиляция кода)
+build_job:
+  stage: build
+  script:
+    - ./mvnw compile   # Если используете Maven Wrapper, иначе: mvn compile
+  only:
+    - merge_requests   # Запускать при создании Merge Request
+    - main             # Запускать при пуше в главную ветку
+
+# Стадия тестирования (запуск JUnit/TestNG тестов)
+test_job:
+  stage: test
+  script:
+    - ./mvnw test      # Запуск тестов и генерация отчетов
+  artifacts:
+    when: always       # Сохранять отчеты даже если тесты упали
+    paths:
+      - target/surefire-reports/
+    expire_in: 1 week  # Хранить файлы отчетов на GitLab.com 7 дней
