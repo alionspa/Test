@@ -1,36 +1,54 @@
-stages:
-  - build
-  - test
-
-# Используем официальный образ OpenJDK (или Eclipse Temurin)
+# Иcпользуем официальный образ Docker с поддержкой JDK 17
 image: eclipse-temurin:17-jdk-alpine
 
-# Настройка кэширования локального репозитория Maven (.m2),
-# чтобы ускорить сборку при повторных запусках пайплайна
+# Глобальный кэш для Maven, чтобы не выкачивать зависимости при каждой сборке
 cache:
   paths:
     - .m2/repository
 
 variables:
-  # Указываем Maven использовать локальную папку проекта для кэша
+  # Переопределяем путь к локальному репозиторию Maven для работы кэша
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
 
-# Стадия сборки (компиляция кода)
+# Определяем последовательность этапов (Stages)
+stages:
+  - build
+  - test
+  - package
+
+# 1. Этап компиляции
 build_job:
   stage: build
   script:
-    - ./mvnw compile   # Если используете Maven Wrapper, иначе: mvn compile
+    - echo "Компиляция Java проекта..."
+    - ./mvnw compile
   only:
-    - merge_requests   # Запускать при создании Merge Request
-    - main             # Запускать при пуше в главную ветку
+    - merge_requests
+    - main
 
-# Стадия тестирования (запуск JUnit/TestNG тестов)
+# 2. Этап запуска юнит-тестов
 test_job:
   stage: test
   script:
-    - ./mvnw test      # Запуск тестов и генерация отчетов
+    - echo "Запуск тестов JUnit..."
+    - ./mvnw test
+  # GitLab подхватит отчеты о тестах и покажет в интерфейсе
   artifacts:
-    when: always       # Сохранять отчеты даже если тесты упали
+    when: always
     paths:
       - target/surefire-reports/
-    expire_in: 1 week  # Хранить файлы отчетов на GitLab.com 7 дней
+    reports:
+      junit: target/surefire-reports/TEST-*.xml
+
+# 3. Этап упаковки в JAR
+package_job:
+  stage: package
+  script:
+    - echo "Создание исполняемого JAR-файла..."
+    - ./mvnw package -DskipTests
+  artifacts:
+    paths:
+      - target/*.jar
+    expire_in: 1 week
+  only:
+    - main
